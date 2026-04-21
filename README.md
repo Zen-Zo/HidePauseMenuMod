@@ -3,7 +3,7 @@
 
 # Hide Pause Menu
 
-A Geode mod for Geometry Dash that adds a hide button to the pause menu, for getting a better look at your deaths or capturing clean screenshots.
+A Geode mod for Geometry Dash that adds a hide button to the pause menu, for getting a better look at your deaths or capturing clean screenshots. (Also works on the hide End Level Menu button)
 
 [![Mod Version](https://api.geode-sdk.org/v1/mods/zenzo.hide_pause_menu/status_badge?stat=version)](https://github.com/Zen-Zo/HidePauseMenuMod/releases/latest)
 [![Downloads](https://api.geode-sdk.org/v1/mods/zenzo.hide_pause_menu/status_badge?stat=downloads)](https://geode-sdk.org/mods/zenzo.hide_pause_menu)
