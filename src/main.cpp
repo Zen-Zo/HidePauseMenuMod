@@ -1,5 +1,6 @@
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/EndLevelLayer.hpp>
+#include <Geode/modify/PlayLayer.hpp>
 
 using namespace geode::prelude;
 
@@ -8,130 +9,50 @@ constexpr int PAUSE_LAYER_OPACITY = 75;
 constexpr int MAX_OPACITY = 255;
 constexpr float BUTTON_SPRITE_SCALE = 0.67f;
 constexpr float DEFAULT_BUTTON_SCALE = 1.0f;
-constexpr float HIDDEN_BUTTON_SCALE = 41.f; // Scale big enough to cover the entire screen
-constexpr const char* NONE_EXECPTION_ID = "__NONE__";
+constexpr float HIDDEN_BUTTON_SCALE = 50.f; // Scale big enough to cover the entire screen
+constexpr const char* NONE_EXCEPTION_ID = "__NONE__";
 constexpr const char* SHOW_PERCENTAGE = "0040";
 constexpr const char* HIDE_PRACTICE_BUTTONS = "0071";
+constexpr const char* SHOW_FPS = "0115";
 constexpr const char* SHOW_INFO_LABEL = "0109";
-constexpr const char* HIDE_ATTEMPS = "0134";
-constexpr const char* HIDE_PRACTICE_ATTEMPS = "0135";
+constexpr const char* HIDE_ATTEMPTS = "0134";
+constexpr const char* HIDE_PRACTICE_ATTEMPTS = "0135";
 constexpr const char* AUDIO_VISUALIZER = "0144";
 constexpr const char* SHOW_TIME = "0145";
 
-class $modify(HidePauseMenu, PauseLayer) {
-	struct Fields {
-		Mod* m_mod = Mod::get();
-		GameManager* m_gameManager = GameManager::sharedState();
-		PlayLayer* m_playLayer = PlayLayer::get();
-		CCScene* m_scene = CCScene::get();
-		CCNode* m_buttonPos;
-		CCMenuItemSpriteExtra* m_button;
-		std::unordered_set<CCNode*> m_nonVisibleNodes;
-	};
+namespace {
+	bool s_autoHideOnPause = false;
+	bool s_pausedViaKeybind = false;
 
-	void customSetup() {
-		PauseLayer::customSetup();
-		if (!m_fields->m_mod->getSettingValue<bool>("hide_button_mod")) return;
-
-		updateButtonPos();
-		if (!m_fields->m_buttonPos) return;
-
-		auto* hideBtnSpr = CircleButtonSprite::create(CCSprite::createWithSpriteFrameName("hideBtn_001.png"));
-		hideBtnSpr->setScale(BUTTON_SPRITE_SCALE);
-
-		auto* hideBtnButton = CCMenuItemSpriteExtra::create(hideBtnSpr, this, menu_selector(HidePauseMenu::onHideButton));
-		hideBtnButton->setID("hide-button"_spr);
-		
-		m_fields->m_buttonPos->addChild(hideBtnButton);
-		m_fields->m_buttonPos->updateLayout();
-		m_fields->m_button = hideBtnButton;
-	}
-
-	void onResume(CCObject* sender) {
-		if (!getChildByID("background")->isVisible())
-			onHideButton(sender);
-
-		PauseLayer::onResume(sender);
-	}
-	
-	void tryQuit(CCObject* sender) {
-		if (!getChildByID("background")->isVisible())
-			onHideButton(sender);
-		else
-			PauseLayer::tryQuit(sender);
-	}
-
-	void onHideButton(CCObject* sender) {
-		auto* background = getChildByID("background");
-		if (!background) return;
-
-		const bool shouldShowUI = !background->isVisible();
-
-		changeChildrenVisibility(PauseLayer::getChildren(), shouldShowUI, m_fields->m_buttonPos->getID());
-		changeChildrenVisibility(m_fields->m_buttonPos->getChildren(), shouldShowUI, "hide-button"_spr);
-		
-		PauseLayer::setOpacity(shouldShowUI ? PAUSE_LAYER_OPACITY : HIDDEN_OPACITY);
-		applyUserModSettings(shouldShowUI);
-		applyModCompatibilityFixes(shouldShowUI);
-
-		if (m_fields->m_mod->getSettingValue<bool>("screenshot_mode")) {
-			m_fields->m_button->setOpacity(shouldShowUI ? MAX_OPACITY : HIDDEN_OPACITY);
-			m_fields->m_button->setScale(shouldShowUI ? DEFAULT_BUTTON_SCALE : HIDDEN_BUTTON_SCALE);
-		}
-	}
-
-	void updateButtonPos() {
-		auto buttonPos = m_fields->m_mod->getSettingValue<std::string>("hide_button_pos") + "-button-menu";
-		buttonPos[0] = std::tolower(buttonPos[0]);
-		m_fields->m_buttonPos = getChildByID(buttonPos);
-	}
-
-	void changeChildrenVisibility(CCArray* nodes, bool visible, const geode::ZStringView& exceptionID = NONE_EXECPTION_ID) {
-		for (auto* node : CCArrayExt<CCNode>(nodes)) {
-			if (node->getID() == exceptionID || m_fields->m_nonVisibleNodes.count(node) > 0) continue;
-			
-			if (node->isVisible() != visible)
-				node->setVisible(visible);
-			else
-				m_fields->m_nonVisibleNodes.insert(node);
-		}
-	}
-	
-	void toggleNodeVisibility(CCNode* node, bool visible, bool condition) {
+	void setNodeVisible(CCNode* node, bool visible, bool condition) {
 		if (node)
 			node->setVisible(visible && condition);
 	}
 
-	void handlePlayLayerElements(PlayLayer* playLayer, Mod* mod, bool visible) {
-		if (!playLayer) return;
-		
-		// Checkpoints
-		if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_checkpoints")) {
-			for (CheckpointObject* checkpoint : CCArrayExt<CheckpointObject>(playLayer->m_checkpointArray)) {
-				checkpoint->m_physicalCheckpointObject->setVisible(visible);
+	void changeChildrenVisibility(CCNode* parent, bool visible, std::unordered_set<CCNode*>& nonVisibleNodes, const ZStringView& exceptionID = NONE_EXCEPTION_ID) {
+		for (auto* child : parent->getChildrenExt()) {
+			if (child->getID() == exceptionID || nonVisibleNodes.contains(child)) continue;
+
+			if (child->isVisible() != visible) {
+				child->setVisible(visible);
+			} else {
+				nonVisibleNodes.insert(child);
 			}
 		}
-
-		handleUILayer(playLayer, m_fields->m_gameManager, mod, visible);
-		handleGameManager(playLayer, m_fields->m_gameManager, mod, visible);
 	}
 
 	void handleUILayer(PlayLayer* playLayer, GameManager* gameManager, Mod* mod, bool visible) {
 		if (!playLayer->m_uiLayer) return;
 
 		if (mod->getSettingValue<bool>("hide_ui_layer")) {
-			// UILayer
 			playLayer->m_uiLayer->setVisible(visible);
 		} else if (gameManager) {
-			// Practice buttons
-			if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_practice_buttons")) {
-				toggleNodeVisibility(playLayer->m_uiLayer->getChildByID("checkpoint-menu"), visible, !m_fields->m_gameManager->getGameVariable(HIDE_PRACTICE_BUTTONS));
-			}
+			if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_practice_buttons"))
+				setNodeVisible(playLayer->m_uiLayer->getChildByID("checkpoint-menu"), visible, !gameManager->getGameVariable(HIDE_PRACTICE_BUTTONS));
 
-			// Audio visualizer
 			if (mod->getSettingValue<bool>("hide_audio_visualizer")) {
-				toggleNodeVisibility(playLayer->m_audioVisualizerSFX, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
-				toggleNodeVisibility(playLayer->m_audioVisualizerBG, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
+				setNodeVisible(playLayer->m_audioVisualizerSFX, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
+				setNodeVisible(playLayer->m_audioVisualizerBG, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
 			}
 		}
 	}
@@ -140,71 +61,182 @@ class $modify(HidePauseMenu, PauseLayer) {
 		if (!gameManager) return;
 
 		if (playLayer->m_isPlatformer) {
-			// Platformer time
 			if (mod->getSettingValue<bool>("hide_time"))
-				toggleNodeVisibility(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_TIME));
+				setNodeVisible(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_TIME));
 		} else {
-			// Progress bar
 			if (mod->getSettingValue<bool>("hide_progress_bar"))
-				toggleNodeVisibility(playLayer->m_progressBar, visible, gameManager->m_showProgressBar);
-			
-			// Percentage
+				setNodeVisible(playLayer->m_progressBar, visible, gameManager->m_showProgressBar);
+
 			if (mod->getSettingValue<bool>("hide_percentage"))
-				toggleNodeVisibility(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_PERCENTAGE));
+				setNodeVisible(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_PERCENTAGE));
 		}
 
 		if (playLayer->m_isPracticeMode) {
-			// Practice attemps
-			if (!gameManager->getGameVariable(HIDE_ATTEMPS) && mod->getSettingValue<bool>("hide_practice_attemps"))
-				toggleNodeVisibility(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_PRACTICE_ATTEMPS));
+			if (!gameManager->getGameVariable(HIDE_ATTEMPTS) && mod->getSettingValue<bool>("hide_practice_attemps"))
+				setNodeVisible(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_PRACTICE_ATTEMPTS));
 		} else {
-			// Attemps
 			if (mod->getSettingValue<bool>("hide_attemps"))
-				toggleNodeVisibility(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_ATTEMPS));
+				setNodeVisible(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_ATTEMPTS));
 		}
-		
-		// Level info label
+
 		if (mod->getSettingValue<bool>("hide_info_label"))
-			toggleNodeVisibility(playLayer->m_infoLabel, visible, gameManager->getGameVariable(SHOW_INFO_LABEL));
+			setNodeVisible(playLayer->m_infoLabel, visible, gameManager->getGameVariable(SHOW_INFO_LABEL));
 	}
 
-	void handleSceneElements(CCScene* scene, Mod* mod, bool visible) {
-		// Floating mod menu buttons
-		if(mod->getSettingValue<bool>("hide_mod_menus")) {
-			if (!scene) return;
-			// This should hide other mods that use the scene layer and run on a scheduler, like some mod menus.
-			for (auto* node : CCArrayExt<CCNode>(scene->getChildren())) {
-				const auto id = node->getID();
-				if (id == "PlayLayer" || id == "PauseLayer") continue;
-				changeChildrenVisibility(node->getChildren(), visible);
+	void handlePlayLayerElements(PlayLayer* playLayer, Mod* mod, bool visible) {
+		if (!playLayer) return;
+
+		if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_checkpoints")) {
+			for (auto* checkpoint : CCArrayExt<CheckpointObject>(playLayer->m_checkpointArray)) {
+				checkpoint->m_physicalCheckpointObject->setVisible(visible);
 			}
 		}
+
+		if (mod->getSettingValue<bool>("hide_testmode_label"))
+			setNodeVisible(playLayer->getChildByID("testmode-label"), visible, playLayer->m_isTestMode);
+
+		auto* gameManager = GameManager::sharedState();
+		handleUILayer(playLayer, gameManager, mod, visible);
+		handleGameManager(playLayer, gameManager, mod, visible);
 	}
 
-	void applyUserModSettings(bool visible) {
-		handlePlayLayerElements(m_fields->m_playLayer, m_fields->m_mod, visible);
-		handleSceneElements(m_fields->m_scene, m_fields->m_mod, visible);
+	void handleOverlayManager(OverlayManager* overlayManager, Mod* mod, bool visible) {
+		if (!overlayManager) return;
+
+		if (mod->getSettingValue<bool>("hide_floating_buttons"))
+			overlayManager->setVisible(visible);
 	}
 
-	// "Vanilla Pages" fix for overlapping buttons.
+	void handleCCDirector(CCDirector* ccDirector, Mod* mod, bool visible) {
+		if (!ccDirector) return;
+
+		if (mod->getSettingValue<bool>("hide_fps"))
+			ccDirector->m_bDisplayFPS = visible && GameManager::sharedState()->getGameVariable(SHOW_FPS);
+	}
+
+	void applyUserModSettings(Mod* mod, bool visible) {
+		handlePlayLayerElements(PlayLayer::get(), mod, visible);
+		handleOverlayManager(OverlayManager::get(), mod, visible);
+		handleCCDirector(CCDirector::sharedDirector(), mod, visible);
+	}
+
+	void updateHideButton(CCMenuItemSpriteExtra* button, bool visible, std::unordered_set<CCNode*>& nonVisibleNodes) {
+		if (!button) return;
+
+		button->stopAllActions();
+		button->setOpacity(visible ? MAX_OPACITY : HIDDEN_OPACITY);
+		button->setScale(visible ? DEFAULT_BUTTON_SCALE : HIDDEN_BUTTON_SCALE);
+	}
+}
+
+class $modify(HidePauseMenu, PauseLayer) {
+	struct Fields {
+		Mod* m_mod = Mod::get();
+		CCMenuItemSpriteExtra* m_button = nullptr;
+		CCNode* m_background = nullptr;
+		std::unordered_set<CCNode*> m_nonVisibleNodes;
+	};
+
+	void customSetup() {
+		PauseLayer::customSetup();
+		if (m_fields->m_mod->getSettingValue<bool>("mod_disabled")) return;
+
+		m_fields->m_background = this->getChildByID("background");
+		if (!m_fields->m_background) return;
+
+		if (auto* buttonParent = getButtonParent()) {
+			auto* hideBtnSpr = CircleButtonSprite::create(CCSprite::createWithSpriteFrameName("hideBtn_001.png"));
+			hideBtnSpr->setScale(BUTTON_SPRITE_SCALE);
+
+			auto* hideBtnButton = CCMenuItemSpriteExtra::create(hideBtnSpr, this, menu_selector(HidePauseMenu::onHideButton));
+			hideBtnButton->setID("hide-button"_spr);
+			buttonParent->addChild(hideBtnButton);
+
+			buttonParent->updateLayout();
+			m_fields->m_button = hideBtnButton;
+		}
+
+		// Auto-hide if the keybind toggle is active
+		// Skip if pauseAndHide keybind triggered the pause, since it handles hiding itself
+		if (s_autoHideOnPause && !s_pausedViaKeybind) {
+			Loader::get()->queueInMainThread([this]() {
+				onHideButton(this);
+			});
+		}
+	}
+
+	void onResume(CCObject* sender) {
+		if (!m_fields->m_background->isVisible())
+			onHideButton(sender);
+
+		PauseLayer::onResume(sender);
+	}
+
+	void tryQuit(CCObject* sender) {
+		if (!m_fields->m_background->isVisible()) {
+			s_pausedViaKeybind = false;
+			onHideButton(sender);
+		} else {
+			PauseLayer::tryQuit(sender);
+		}
+	}
+
+	void onHideButton(CCObject* sender) {
+		const bool visible = !m_fields->m_background->isVisible();
+
+		if (m_fields->m_button) {
+			changeChildrenVisibility(this, visible, m_fields->m_nonVisibleNodes, m_fields->m_button->getParent()->getID());
+			changeChildrenVisibility(m_fields->m_button->getParent(), visible, m_fields->m_nonVisibleNodes, "hide-button"_spr);
+
+			if (m_fields->m_mod->getSettingValue<bool>("hide_hide_button")) {
+				changeChildrenVisibility(m_fields->m_button, visible, m_fields->m_nonVisibleNodes);
+				updateHideButton(m_fields->m_button, visible, m_fields->m_nonVisibleNodes);
+			}
+		} else {
+			changeChildrenVisibility(this, visible, m_fields->m_nonVisibleNodes);
+		}
+
+		PauseLayer::setOpacity(visible ? PAUSE_LAYER_OPACITY : HIDDEN_OPACITY);
+		applyUserModSettings(m_fields->m_mod, visible);
+		applyModCompatibilityFixes(visible);
+	}
+
+	CCNode* getButtonParent() {
+		auto buttonPos = m_fields->m_mod->getSettingValue<std::string>("hide_button_pos") + "-button-menu";
+		buttonPos[0] = static_cast<char>(std::tolower(static_cast<unsigned char>(buttonPos[0])));
+		return buttonPos[0] != 'o' ? this->getChildByID(buttonPos) : nullptr;
+	}
+
 	void applyModCompatibilityFixes(bool visible) {
-		if (auto* rightNavigationMenu = getChildByID("right-button-menu-navigation-menu"))
-			changeChildrenVisibility(rightNavigationMenu->getChildren(), visible);
+		// Hide "Vanilla Pages" arrows
+		if (auto* leftNav = this->getChildByID("left-button-menu-navigation-menu"))
+			changeChildrenVisibility(leftNav, visible, m_fields->m_nonVisibleNodes);
 
-		if (auto* centerNavigationMenu = getChildByID("center-button-menu-navigation-menu"))
-			changeChildrenVisibility(centerNavigationMenu->getChildren(), visible);
+		if (auto* rightNav = this->getChildByID("right-button-menu-navigation-menu"))
+			changeChildrenVisibility(rightNav, visible, m_fields->m_nonVisibleNodes);
+
+		if (auto* centerNav = this->getChildByID("center-button-menu-navigation-menu"))
+			changeChildrenVisibility(centerNav, visible, m_fields->m_nonVisibleNodes);
 	}
 };
 
 class $modify(EndLevelLayer) {
 	struct Fields {
-		Mod* m_mod = Mod::get();
-		HidePauseMenu m_hpm = HidePauseMenu();
 		CCMenuItemSpriteExtra* m_hideButton = nullptr;
+		std::unordered_set<CCNode*> m_nonVisibleNodes;
 	};
 
 	void customSetup() {
 		EndLevelLayer::customSetup();
+
+		this->addEventListener(
+			KeybindSettingPressedEventV3(Mod::get(), "hide_pause_menu-keybind"),
+			[this](Keybind const& keybind, bool down, bool repeat, double timestamp) {
+				if (down && !repeat)
+					EndLevelLayer::onHideLayer(this);
+			}
+		);
+
 		if (auto* hideLayerMenu = getChildByID("hide-layer-menu"))
 			m_fields->m_hideButton = typeinfo_cast<CCMenuItemSpriteExtra*>(hideLayerMenu->getChildByID("hide-button"));
 	}
@@ -222,26 +254,86 @@ class $modify(EndLevelLayer) {
 	}
 
 	void onMenu(CCObject* sender) {
-		if (EndLevelLayer::m_hidden)
+		if (EndLevelLayer::m_hidden) {
 			onHideLayer(sender);
-		else
+		} else {
 			EndLevelLayer::onMenu(sender);
+		}
 	}
 
 	void setLayerVisibility(bool visible = true) {
-		if (!m_fields->m_mod->getSettingValue<bool>("hide_button_mod")) return;
+		auto* mod = Mod::get();
+		if (mod->getSettingValue<bool>("mod_disabled")) return;
 
-		if (m_fields->m_mod->getSettingValue<bool>("end_level_button"))
-			m_fields->m_hpm.applyUserModSettings(visible);
-		
-		if (m_fields->m_mod->getSettingValue<bool>("end_level_screenshot_mode"))
-			updateHideButton(visible);
+		if (mod->getSettingValue<bool>("end_level_layer_button"))
+			applyUserModSettings(mod, visible);
+
+		if (mod->getSettingValue<bool>("hide_end_level_layer_button")) {
+			changeChildrenVisibility(m_fields->m_hideButton, visible, m_fields->m_nonVisibleNodes);
+			updateHideButton(m_fields->m_hideButton, visible, m_fields->m_nonVisibleNodes);
+		}
+	}
+};
+
+class $modify(PlayLayer) {
+	bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
+		if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
+
+		s_autoHideOnPause = false;
+
+		this->addEventListener(
+			KeybindSettingPressedEventV3(Mod::get(), "hide_pause_menu_toggle-keybind"),
+			[this](Keybind const& keybind, bool down, bool repeat, double timestamp) {
+				if (down && !repeat)
+					toggleAutoHide();
+			}
+		);
+
+		this->addEventListener(
+			KeybindSettingPressedEventV3(Mod::get(), "hide_pause_menu-keybind"),
+			[this](Keybind const& keybind, bool down, bool repeat, double timestamp) {
+				if (down && !repeat) {
+					if (!PlayLayer::m_isPaused) {
+						pauseAndHide();
+					} else {
+						unpause();
+					}
+				}
+			}
+		);
+
+		return true;
 	}
 
-	void updateHideButton(bool visible) {
-		if (!m_fields->m_hideButton) return;
+	inline auto* getPauseLayer() {
+		return static_cast<HidePauseMenu*>(typeinfo_cast<PauseLayer*>(CCScene::get()->getChildByID("PauseLayer")));
+	}
 
-		m_fields->m_hideButton->setOpacity(visible ? MAX_OPACITY : HIDDEN_OPACITY);
-		m_fields->m_hideButton->setScale(visible ? DEFAULT_BUTTON_SCALE : HIDDEN_BUTTON_SCALE);
+	void toggleAutoHide() {
+		s_autoHideOnPause = !s_autoHideOnPause;
+		if (auto* pauseLayer = getPauseLayer())
+			if (pauseLayer->m_fields->m_background->isVisible() == s_autoHideOnPause)
+				pauseLayer->onHideButton(pauseLayer);
+	}
+
+	void pauseAndHide() {
+		// Pauses game and hides the pause layer
+		s_pausedViaKeybind = true;
+		PlayLayer::pauseGame(false);
+		if(auto* pauseLayer = getPauseLayer())
+			pauseLayer->onHideButton(pauseLayer);
+	}
+
+	void unpause() {
+		if(auto* pauseLayer = getPauseLayer()) {
+			if (s_pausedViaKeybind) {
+				// If gameplay have been paused using the keybind, back to gameplay
+				pauseLayer->onResume(pauseLayer);
+				s_pausedViaKeybind = false;
+			} else {
+				// If gameplay have been paused not using the keybind, back to pause menu
+				pauseLayer->onHideButton(pauseLayer);
+			}
+		}
 	}
 };
