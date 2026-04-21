@@ -1,5 +1,5 @@
 {
-	"geode": "5.0.0-beta.1",
+	"geode": "5.6.1",
 	"gd": {
 		"win": "2.2081",
 		"android": "2.2081",
@@ -8,9 +8,9 @@
 	},
 	"id": "zenzo.hide_pause_menu",
 	"name": "Hide Pause Menu",
-	"version": "v1.1.1",
+	"version": "v1.2.0",
 	"developer": "ZenZo",
-	"description": "Adds a hide button the pause menu to hide it.",
+	"description": "Adds a button to the pause menu to hide it.",
 	"links": {
 		"source": "https://github.com/Zen-Zo/HidePauseMenuMod"
 	},
@@ -26,125 +26,146 @@
 			"type": "title",
 			"name": "Main settings"
 		},
-		"hide_button_mod" : {
+		"mod_disabled" : {
 			"type": "bool",
-			"default": true,
-			"name": "Enable Mod",
-			"description": "Soft toggles the mod."
+			"default": false,
+			"name": "Disable Mod",
+			"description": "Disables the mod without restarting the game."
 		},
 		"hide_button_pos" : {
-			"enable-if": "hide_button_mod",
 			"type": "string",
 			"default": "Right",
-			"one-of": ["Left", "Bottom", "Right"],
+			"one-of": ["Left", "Bottom", "Right", "Off"],
 			"name": "Button Position",
-			"description": "Position of the button inside the pause menu."
+			"description": "Position of the hide button inside the pause menu.\nSetting this to 'Off' disables the button, but keybinds can still be used to hide/show the pause menu."
 		},
-		"screenshot_mode" : {
-			"enable-if": "hide_button_mod",
+		"end_level_layer_button" : {
 			"type": "bool",
-			"default": false,
-			"name": "Screenshot Mode",
-			"description": "Hide the 'Hide Pause Menu' button when the Pause Menu is hidden.\nWith this enabled, just click/tap the screen to re-show the Pause Menu."
-		},
-		"end_level_button" : {
-			"enable-if": "hide_button_mod",
-			"type": "bool",
-			"default": false,
+			"default": true,
 			"name": "Hide End Level Menu",
-			"description": "Adds the Hide Pause Menu button behavior on the vanilla Hide End Level Menu button."
+			"description": "Applies the mod's hide behavior to the vanilla 'Hide' button on the end level screen."
 		},
-		"end_level_screenshot_mode" : {
-			"enable-if": "hide_button_mod",
-			"type": "bool",
-			"default": false,
-			"name": "End Level Screenshot Mode",
-			"description": "Hide the 'Hide End Level Menu' button when the End Level Menu is hidden.\nWith this enabled, just click/tap the screen to re-show the End Level Menu."
+		"keybind-settings": {
+			"type": "title",
+			"name": "Keybind settings"
+		},
+		"hide_pause_menu-keybind" : {
+			"enable-if": "!mod_disabled",
+			"type": "keybind",
+			"category": "gameplay",
+			"default": "",
+			"name": "Hide Pause Menu",
+			"description": "Keybind to hide the pause menu, if the game is not paused this will pause it. Also controls the end level menu."
+		},
+		"hide_pause_menu_toggle-keybind" : {
+			"enable-if": "!mod_disabled",
+			"type": "keybind",
+			"category": "gameplay",
+			"default": "",
+			"name": "Toggle Hide Pause Menu",
+			"description": "Keybind to toggle the pause menu visibility. While paused, pause one more time or press this keybind to show the pause menu. Not persistent if you change level."
 		},
 		"auto-hide-settings": {
 			"type": "title",
 			"name": "Auto hide settings",
-			"description": "Parts of the level layer that will be automatically hidden when hiding the pause menu."
+			"description": "These settings control what elements are hidden when the menu is hidden."
+		},
+		"hide_hide_button" : {
+			"type": "bool",
+			"default": false,
+			"name": "Hide 'Hide Button'"
+		},
+		"hide_end_level_layer_button" : {
+			"type": "bool",
+			"default": false,
+			"name": "Hide 'End Level Menu' Button"
+		},
+		"hide_fps" : {
+			"platforms": ["desktop"],
+			"type": "bool",
+			"default": false,
+			"name": "Hide FPS Counter"
 		},
 		"hide_progress_bar" : {
 			"type": "bool",
 			"default": false,
-			"name": "Hide Progress Bar",
-			"description": "Hides the progress bar when the pause menu is hidden."
+			"name": "Hide Progress Bar"
 		},
 		"hide_percentage" : {
 			"type": "bool",
 			"default": false,
-			"name": "Hide Percentage",
-			"description": "Hides the percentage when the pause menu is hidden."
+			"name": "Hide Percentage"
 		},
 		"hide_time" : {
 			"type": "bool",
 			"default": false,
-			"name": "Hide Platformer Time",
-			"description": "Hides the time when the pause menu is hidden."
+			"name": "Hide Platformer Timer"
 		},
 		"hide_info_label" : {
 			"type": "bool",
 			"default": false,
 			"name": "Hide Info Label",
-			"description": "Hides the info label when the pause menu is hidden."
+			"description": "Hides the info label (shown in practice mode or via mods)."
+		},
+		"hide_testmode_label" : {
+			"type": "bool",
+			"default": false,
+			"name": "Hide Test Mode Label"
 		},
 		"hide_attemps" : {
 			"type": "bool",
 			"default": false,
-			"name": "Hide Attemps",
-			"description": "Hides attemps when the pause menu is hidden."
+			"name": "Hide Attempts"
 		},
 		"hide_practice_attemps" : {
 			"type": "bool",
 			"default": false,
-			"name": "Hide Practice Attemps",
-			"description": "Hides practice attemps when the pause menu is hidden."
+			"name": "Hide Practice Attempts"
 		},
 		"hide_checkpoints" : {
 			"type": "bool",
 			"default": false,
-			"name": "Hide Practice Checkpoints",
-			"description": "Hides practice checkpoints when the pause menu is hidden."
+			"name": "Hide Practice Checkpoints"
 		},
 		"hide_ui_layer" : {
 			"type": "bool",
 			"default": false,
 			"name": "Hide UI Layer",
-			"description": "Hides UI layer when the pause menu is hidden.\nThe UI Layer contain practice buttons, audio visualizer and other mods StartPos switchers and labels."
+			"description": "Hides the entire UI layer.\nIncludes practice buttons, audio visualizer, and elements added by other mods (e.g. StartPos switchers)."
 		},
 		"hide_practice_buttons" : {
 			"enable-if": "!hide_ui_layer",
-			"enable-if-description": "Hide UI Layer setting already hide this",
+			"enable-if-description": "'Hide UI Layer' already hides this.",
 			"type": "bool",
 			"default": false,
-			"name": "Hide Practice Buttons",
-			"description": "Hides practice buttons when the pause menu is hidden."
+			"name": "Hide Practice Buttons"
 		},
 		"hide_audio_visualizer" : {
 			"enable-if": "!hide_ui_layer",
-			"enable-if-description": "Hide UI Layer setting already hide this",
+			"enable-if-description": "'Hide UI Layer' already hides this.",
 			"type": "bool",
 			"default": false,
 			"name": "Hide Audio Visualizer",
-			"description": "Hides the audio visualizer SFX and BG when the pause menu is hidden."
+			"description": "Hides the SFX and background audio visualizers."
 		},
-		"hide_mod_menus" : {
+		"hide_floating_buttons" : {
 			"type": "bool",
 			"default": false,
-			"name": "Hide Mod Menus",
-			"description": "Hides floating button used by some mod menus when the pause menu is hidden.\nThis only makes the button invisible, it stays clickable.\nIf this hides something unexpected, open an issue on GitHub."
+			"name": "Hide Floating Buttons",
+			"description": "Should hide floating buttons added by other mods.\nNote: this only makes them invisible, they still remain clickable. Currently does not work with the 'QOLmod' button."
 		}
 	},
 	"resources": {
-        "sprites": [
-            "resources/*.png"
-        ]
-    },
+		"sprites": [
+			"resources/*.png"
+		]
+	},
 	"tags": [
+		"gameplay",
 		"offline",
 		"enhancement",
-		"utility"
+		"interface",
+		"utility",
+		"customization"
 	]
 }
