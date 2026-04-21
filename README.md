@@ -1,31 +1,42 @@
-# Hide Pause Menu
-<img src="logo.png" width="75" alt="HideMenu logo" />
+<div align="center">
+    <img src="logo.png" width="100" alt="Hide Pause Menu logo">
 
-Adds a configurable hide button to the pause menu to hide it, perfect to get a better look at your deaths or capturing clean screenshots.
+# Hide Pause Menu
+
+A Geode mod for Geometry Dash that adds a hide button to the pause menu, for getting a better look at your deaths or capturing clean screenshots.
+
+[![Mod Version](https://api.geode-sdk.org/v1/mods/zenzo.hide_pause_menu/status_badge?stat=version)](https://github.com/Zen-Zo/HidePauseMenuMod/releases/latest)
+[![Downloads](https://api.geode-sdk.org/v1/mods/zenzo.hide_pause_menu/status_badge?stat=downloads)](https://geode-sdk.org/mods/zenzo.hide_pause_menu)
+[![GD Version](https://api.geode-sdk.org/v1/mods/zenzo.hide_pause_menu/status_badge?stat=gd_version)](https://geometrydash.com/)
+[![Geode Version](https://api.geode-sdk.org/v1/mods/zenzo.hide_pause_menu/status_badge?stat=geode_version)](https://geode-sdk.org/)
+
+</div>
 
 ## Features
-- Toggle visibility of all pause menu elements
-- Configurable button position
-- Two different modes
-- Customizable behavior
+- Configurable button position (Left / Bottom / Right / Off)
+- End level menu support with the same hide behavior
+- Keybind support for toggling visibility or instant pause and hide
+- Auto-hide additional HUD elements (FPS counter, progress bar, percentage, timer, attempts, practice buttons, audio visualizer, and more)
 
-## Modes
 
-### 1. Default Mode
+## Same frame before and after mod setup
 
-Button remains visible when menu is hidden
+### Before
+![Default](./resources/default.png)
+### After
+![Configured](./resources/configured.png)
 
-![Default Mode - Button visible during menu hide](./resources/InvisibleDealocked.png)
+## Installation
 
-### 2. Screenshot Mode
+1. Install [Geode](https://geode-sdk.org/install) for Geometry Dash.
+2. Open Geometry Dash, then open the Geode mod list.
+3. Search for Hide Pause Menu.
+4. Press Install and restart the game.
 
-Button disappears completely when hiding menu
+## Build
 
-![Screenshot Mode - Clean UI for captures](./resources/BERZERKER.png)
+- Build instructions are documented here:
+[Geode: Creating and Building a Mod](https://docs.geode-sdk.org/getting-started/create-mod)
 
-## Configuration
-Customize through Geode's mod settings:
-- Toggle mod on/off
-- Select button position (Left/Right/Center)
-- Choose between Default/Screenshot modes
-- Automatically hides chosen game elements
+## Issues & Feature Requests
+- Open a [GitHub Issue](https://github.com/Zen-Zo/HidePauseMenuMod/issues)
