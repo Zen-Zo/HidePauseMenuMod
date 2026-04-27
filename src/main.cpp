@@ -20,113 +20,111 @@ constexpr const char* HIDE_PRACTICE_ATTEMPTS = "0135";
 constexpr const char* AUDIO_VISUALIZER = "0144";
 constexpr const char* SHOW_TIME = "0145";
 
-namespace {
-	bool s_autoHideOnPause = false;
-	bool s_pausedViaKeybind = false;
+bool s_autoHideOnPause = false;
+bool s_pausedViaKeybind = false;
 
-	void setNodeVisible(CCNode* node, bool visible, bool condition) {
-		if (node)
-			node->setVisible(visible && condition);
-	}
+void setNodeVisible(CCNode* node, bool visible, bool condition) {
+	if (node)
+		node->setVisible(visible && condition);
+}
 
-	void changeChildrenVisibility(CCNode* parent, bool visible, std::unordered_set<CCNode*>& nonVisibleNodes, const ZStringView& exceptionID = NONE_EXCEPTION_ID) {
-		for (auto* child : parent->getChildrenExt()) {
-			if (child->getID() == exceptionID || nonVisibleNodes.contains(child)) continue;
+void changeChildrenVisibility(CCNode* parent, bool visible, std::unordered_set<CCNode*>& nonVisibleNodes, const ZStringView& exceptionID = NONE_EXCEPTION_ID) {
+	for (auto* child : parent->getChildrenExt()) {
+		if (child->getID() == exceptionID || nonVisibleNodes.contains(child)) continue;
 
-			if (child->isVisible() != visible) {
-				child->setVisible(visible);
-			} else {
-				nonVisibleNodes.insert(child);
-			}
-		}
-	}
-
-	void handleUILayer(PlayLayer* playLayer, GameManager* gameManager, Mod* mod, bool visible) {
-		if (!playLayer->m_uiLayer) return;
-
-		if (mod->getSettingValue<bool>("hide_ui_layer")) {
-			playLayer->m_uiLayer->setVisible(visible);
-		} else if (gameManager) {
-			if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_practice_buttons"))
-				setNodeVisible(playLayer->m_uiLayer->getChildByID("checkpoint-menu"), visible, !gameManager->getGameVariable(HIDE_PRACTICE_BUTTONS));
-
-			if (mod->getSettingValue<bool>("hide_audio_visualizer")) {
-				setNodeVisible(playLayer->m_audioVisualizerSFX, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
-				setNodeVisible(playLayer->m_audioVisualizerBG, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
-			}
-		}
-	}
-
-	void handleGameManager(PlayLayer* playLayer, GameManager* gameManager, Mod* mod, bool visible) {
-		if (!gameManager) return;
-
-		if (playLayer->m_isPlatformer) {
-			if (mod->getSettingValue<bool>("hide_time"))
-				setNodeVisible(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_TIME));
+		if (child->isVisible() != visible) {
+			child->setVisible(visible);
 		} else {
-			if (mod->getSettingValue<bool>("hide_progress_bar"))
-				setNodeVisible(playLayer->m_progressBar, visible, gameManager->m_showProgressBar);
-
-			if (mod->getSettingValue<bool>("hide_percentage"))
-				setNodeVisible(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_PERCENTAGE));
+			nonVisibleNodes.insert(child);
 		}
+	}
+}
 
-		if (playLayer->m_isPracticeMode) {
-			if (!gameManager->getGameVariable(HIDE_ATTEMPTS) && mod->getSettingValue<bool>("hide_practice_attemps"))
-				setNodeVisible(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_PRACTICE_ATTEMPTS));
-		} else {
-			if (mod->getSettingValue<bool>("hide_attemps"))
-				setNodeVisible(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_ATTEMPTS));
+void handleUILayer(PlayLayer* playLayer, GameManager* gameManager, Mod* mod, bool visible) {
+	if (!playLayer->m_uiLayer) return;
+
+	if (mod->getSettingValue<bool>("hide_ui_layer")) {
+		playLayer->m_uiLayer->setVisible(visible);
+	} else if (gameManager) {
+		if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_practice_buttons"))
+			setNodeVisible(playLayer->m_uiLayer->getChildByID("checkpoint-menu"), visible, !gameManager->getGameVariable(HIDE_PRACTICE_BUTTONS));
+
+		if (mod->getSettingValue<bool>("hide_audio_visualizer")) {
+			setNodeVisible(playLayer->m_audioVisualizerSFX, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
+			setNodeVisible(playLayer->m_audioVisualizerBG, visible, gameManager->getGameVariable(AUDIO_VISUALIZER));
 		}
+	}
+}
 
-		if (mod->getSettingValue<bool>("hide_info_label"))
-			setNodeVisible(playLayer->m_infoLabel, visible, gameManager->getGameVariable(SHOW_INFO_LABEL));
+void handleGameManager(PlayLayer* playLayer, GameManager* gameManager, Mod* mod, bool visible) {
+	if (!gameManager) return;
+
+	if (playLayer->m_isPlatformer) {
+		if (mod->getSettingValue<bool>("hide_time"))
+			setNodeVisible(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_TIME));
+	} else {
+		if (mod->getSettingValue<bool>("hide_progress_bar"))
+			setNodeVisible(playLayer->m_progressBar, visible, gameManager->m_showProgressBar);
+
+		if (mod->getSettingValue<bool>("hide_percentage"))
+			setNodeVisible(playLayer->m_percentageLabel, visible, gameManager->getGameVariable(SHOW_PERCENTAGE));
 	}
 
-	void handlePlayLayerElements(PlayLayer* playLayer, Mod* mod, bool visible) {
-		if (!playLayer) return;
+	if (playLayer->m_isPracticeMode) {
+		if (!gameManager->getGameVariable(HIDE_ATTEMPTS) && mod->getSettingValue<bool>("hide_practice_attemps"))
+			setNodeVisible(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_PRACTICE_ATTEMPTS));
+	} else {
+		if (mod->getSettingValue<bool>("hide_attemps"))
+			setNodeVisible(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_ATTEMPTS));
+	}
 
-		if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_checkpoints")) {
-			for (auto* checkpoint : CCArrayExt<CheckpointObject>(playLayer->m_checkpointArray)) {
-				checkpoint->m_physicalCheckpointObject->setVisible(visible);
-			}
+	if (mod->getSettingValue<bool>("hide_info_label"))
+		setNodeVisible(playLayer->m_infoLabel, visible, gameManager->getGameVariable(SHOW_INFO_LABEL));
+}
+
+void handlePlayLayerElements(PlayLayer* playLayer, Mod* mod, bool visible) {
+	if (!playLayer) return;
+
+	if (playLayer->m_isPracticeMode && mod->getSettingValue<bool>("hide_checkpoints")) {
+		for (auto* checkpoint : CCArrayExt<CheckpointObject>(playLayer->m_checkpointArray)) {
+			checkpoint->m_physicalCheckpointObject->setVisible(visible);
 		}
-
-		if (mod->getSettingValue<bool>("hide_testmode_label"))
-			setNodeVisible(playLayer->getChildByID("testmode-label"), visible, playLayer->m_isTestMode);
-
-		auto* gameManager = GameManager::sharedState();
-		handleUILayer(playLayer, gameManager, mod, visible);
-		handleGameManager(playLayer, gameManager, mod, visible);
 	}
 
-	void handleOverlayManager(OverlayManager* overlayManager, Mod* mod, bool visible) {
-		if (!overlayManager) return;
+	if (mod->getSettingValue<bool>("hide_testmode_label"))
+		setNodeVisible(playLayer->getChildByID("testmode-label"), visible, playLayer->m_isTestMode);
 
-		if (mod->getSettingValue<bool>("hide_floating_buttons"))
-			overlayManager->setVisible(visible);
-	}
+	auto* gameManager = GameManager::sharedState();
+	handleUILayer(playLayer, gameManager, mod, visible);
+	handleGameManager(playLayer, gameManager, mod, visible);
+}
 
-	void handleCCDirector(CCDirector* ccDirector, Mod* mod, bool visible) {
-		if (!ccDirector) return;
+void handleOverlayManager(OverlayManager* overlayManager, Mod* mod, bool visible) {
+	if (!overlayManager) return;
 
-		if (mod->getSettingValue<bool>("hide_fps"))
-			ccDirector->m_bDisplayFPS = visible && GameManager::sharedState()->getGameVariable(SHOW_FPS);
-	}
+	if (mod->getSettingValue<bool>("hide_floating_buttons"))
+		overlayManager->setVisible(visible);
+}
 
-	void applyUserModSettings(Mod* mod, bool visible) {
-		handlePlayLayerElements(PlayLayer::get(), mod, visible);
-		handleOverlayManager(OverlayManager::get(), mod, visible);
-		handleCCDirector(CCDirector::sharedDirector(), mod, visible);
-	}
+void handleCCDirector(CCDirector* ccDirector, Mod* mod, bool visible) {
+	if (!ccDirector) return;
 
-	void updateHideButton(CCMenuItemSpriteExtra* button, bool visible, std::unordered_set<CCNode*>& nonVisibleNodes) {
-		if (!button) return;
+	if (mod->getSettingValue<bool>("hide_fps"))
+		ccDirector->m_bDisplayFPS = visible && GameManager::sharedState()->getGameVariable(SHOW_FPS);
+}
 
-		button->stopAllActions();
-		button->setOpacity(visible ? MAX_OPACITY : HIDDEN_OPACITY);
-		button->setScale(visible ? DEFAULT_BUTTON_SCALE : HIDDEN_BUTTON_SCALE);
-	}
+void applyUserModSettings(Mod* mod, bool visible) {
+	handlePlayLayerElements(PlayLayer::get(), mod, visible);
+	handleOverlayManager(OverlayManager::get(), mod, visible);
+	handleCCDirector(CCDirector::sharedDirector(), mod, visible);
+}
+
+void updateHideButton(CCMenuItemSpriteExtra* button, bool visible, std::unordered_set<CCNode*>& nonVisibleNodes) {
+	if (!button) return;
+
+	button->stopAllActions();
+	button->setOpacity(visible ? MAX_OPACITY : HIDDEN_OPACITY);
+	button->setScale(visible ? DEFAULT_BUTTON_SCALE : HIDDEN_BUTTON_SCALE);
 }
 
 class $modify(HidePauseMenu, PauseLayer) {
