@@ -78,8 +78,13 @@ void handleGameManager(PlayLayer* playLayer, GameManager* gameManager, Mod* mod,
 			setNodeVisible(playLayer->m_attemptLabel, visible, !gameManager->getGameVariable(HIDE_ATTEMPTS));
 	}
 
-	if (mod->getSettingValue<bool>("hide_info_label"))
+	if (mod->getSettingValue<bool>("hide_info_label")) {
 		setNodeVisible(playLayer->m_infoLabel, visible, gameManager->getGameVariable(SHOW_INFO_LABEL));
+
+		// Hide RunInfoWidget from Run Info that is sadly not in UILayer
+		if (auto* runInfo = playLayer->getChildByID("mat.run-info/RunInfoWidget")) 
+			runInfo->setVisible(visible);
+	}
 }
 
 void handlePlayLayerElements(PlayLayer* playLayer, Mod* mod, bool visible) {
