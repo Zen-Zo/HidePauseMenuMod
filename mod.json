@@ -105,7 +105,7 @@
 			"type": "bool",
 			"default": false,
 			"name": "Hide Info Label",
-			"description": "Hides the info label (shown in practice mode or via mods)."
+			"description": "Hides the info label (shown in practice mode or via mods). Also hides label added by 'Run Info' mod."
 		},
 		"hide_testmode_label" : {
 			"type": "bool",
