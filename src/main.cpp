@@ -182,12 +182,11 @@ class $modify(HidePauseMenu, PauseLayer) {
 	void onHideButton(CCObject* sender) {
 		const bool visible = !m_fields->m_background->isVisible();
 
-		if (m_fields->m_button) {
+		if (m_fields->m_button && m_fields->m_button->isVisible()) {
 			changeChildrenVisibility(this, visible, m_fields->m_nonVisibleNodes, m_fields->m_button->getParent()->getID());
 			changeChildrenVisibility(m_fields->m_button->getParent(), visible, m_fields->m_nonVisibleNodes, "hide-button"_spr);
-
+			
 			if (m_fields->m_mod->getSettingValue<bool>("hide_hide_button")) {
-				changeChildrenVisibility(m_fields->m_button, visible, m_fields->m_nonVisibleNodes);
 				updateHideButton(m_fields->m_button, visible, m_fields->m_nonVisibleNodes);
 			}
 		} else {
