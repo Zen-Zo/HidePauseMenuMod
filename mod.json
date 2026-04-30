@@ -81,10 +81,10 @@
 			"name": "Hide 'End Level Menu' Button"
 		},
 		"hide_fps" : {
-			"platforms": ["desktop"],
 			"type": "bool",
 			"default": false,
-			"name": "Hide FPS Counter"
+			"name": "Hide FPS Counter",
+			"description": "Hide the vanilla FPS counter in advanced graphics settings, to have this setting on mobile use the 'High Graphics on Mobile' mod."
 		},
 		"hide_progress_bar" : {
 			"type": "bool",
@@ -105,7 +105,7 @@
 			"type": "bool",
 			"default": false,
 			"name": "Hide Info Label",
-			"description": "Hides the info label (shown in practice mode or via mods). Also hides label added by 'Run Info' mod."
+			"description": "Hides the info label (shown in practice mode or via mods). Also hides label added by the 'Run Info' mod."
 		},
 		"hide_testmode_label" : {
 			"type": "bool",
